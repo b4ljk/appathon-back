@@ -2,24 +2,43 @@ import * as dotenv from "dotenv"; // see https://github.com/motdotla/dotenv#how-
 import express from "express";
 import bodyParser from "body-parser";
 import axios from "axios";
+import cors from "cors";
+import sisiroute from "./routes.js";
 
 dotenv.config();
 const app = express();
 const port = process.env.PORT || 3001;
+// allow CORS
+app.use((req, res, next) => {
+	res.header("Access-Control-Allow-Origin", "*");
+	res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+	console.log("requsted accepted");
+	next();
+});
+
+app.use(cors());
+
+app.use(bodyParser.json());
 
 app.use(
 	bodyParser.urlencoded({
 		extended: true,
 	})
 );
+
+app.use("/data", sisiroute);
+
 app.get("/sisi", (req, res) => {
 	// console log request header
-	console.log(req.headers);
 	const unitId = req.query.unitId;
-	console.log(unitId);
+	if (unitId == null) {
+		res.send("unitId is null");
+	}
+
 	axios.post(`https://stud-api.num.edu.mn/topMenus/units?unitid=${unitId}`).then((response) => {
 		res.send(response.data);
 	});
+	// res.send("Hello World!");
 });
 
 app.use(express.json({ limit: "1mb" }));
