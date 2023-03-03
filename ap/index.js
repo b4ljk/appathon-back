@@ -14,10 +14,10 @@ calc.post("/", (req, res) => {
 	let loop = userData;
 	let unclassifedlessons = [];
 
-	loop.map((item) => {
-		var data = readFileSync(`${currentDirectory}/${item}.json`, "utf8");
-		unclassifedlessons.push(JSON.parse(data));
-	});
+	// loop.map((item) => {
+	// 	var data = readFileSync(`${currentDirectory}/${item}.json`, "utf8");
+	// 	unclassifedlessons.push(JSON.parse(data));
+	// });
 
 	userData.map(async (item) => {
 		let data = await axios.post(
