@@ -19,6 +19,13 @@ calc.post("/", (req, res) => {
 		unclassifedlessons.push(JSON.parse(data));
 	});
 
+	userData.map(async (item) => {
+		let data = await axios.post(
+			`https://stud-api.num.edu.mn/topMenus/TopSchedules?empid=0&roomid=0&courseid=${item}`
+		);
+		unclassifedlessons.push(data.data);
+	});
+
 	var objectkeys = Object.keys(unclassifedlessons);
 
 	let keys = [];
