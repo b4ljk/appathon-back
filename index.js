@@ -4,6 +4,7 @@ import bodyParser from "body-parser";
 import axios from "axios";
 import cors from "cors";
 import sisiroute from "./routes.js";
+import calc from "./ap/index.js";
 
 dotenv.config();
 const app = express();
@@ -27,7 +28,7 @@ app.use(
 );
 
 app.use("/data", sisiroute);
-
+app.use("/calc", calc);
 app.get("/sisi", (req, res) => {
 	// console log request header
 	const unitId = req.query.unitId;
