@@ -10,7 +10,7 @@ function sleep(ms) {
 }
 async function getDataFromSisi(body) {
   let allData = body.map(async (item, index) => {
-    await sleep(300 * index);
+    await sleep(50 * index);
     let data = await axios.post(`https://stud-api.num.edu.mn/topMenus/TopSchedules?empid=0&roomid=0&courseid=${item}`);
     return data;
   });
