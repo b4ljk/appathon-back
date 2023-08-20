@@ -19,16 +19,29 @@ async function getDataFromSisi(body) {
 
 function getCombinations(arr) {
   var result = [[]];
+  var counter = 0;
+  const maxCombinations = 200000;
+
   for (var i = 0; i < arr.length; i++) {
     var currentSubArray = arr[i];
     var temp = [];
+
     for (var j = 0; j < currentSubArray.length; j++) {
       for (var k = 0; k < result.length; k++) {
-        temp.push(result[k].concat(currentSubArray[j]));
+        var newCombination = result[k].concat(currentSubArray[j]);
+        temp.push(newCombination);
+        counter++;
+
+        // Break the loop if the limit has been reached
+        if (counter >= maxCombinations) {
+          return temp;
+        }
       }
     }
+
     result = temp;
   }
+
   return result;
 }
 
