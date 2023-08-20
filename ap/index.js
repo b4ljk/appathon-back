@@ -2,63 +2,48 @@ import axios from "axios";
 import { Router } from "express";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
+import { schedule_as_nums } from "../helpers/index.js";
 const calc = Router();
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 async function getDataFromSisi(body) {
-  let allData = body.map(async (item) => {
-    let data = await axios.post(
-      `https://stud-api.num.edu.mn/topMenus/TopSchedules?empid=0&roomid=0&courseid=${item}`
-    );
+  let allData = body.map(async (item, index) => {
+    await sleep(300 * index);
+    let data = await axios.post(`https://stud-api.num.edu.mn/topMenus/TopSchedules?empid=0&roomid=0&courseid=${item}`);
     return data;
   });
   return allData;
 }
 
-async function combinator(urls) {
-  let items = [];
-  for (const url of urls) {
-    try {
-      const response = await axios.post(
-        `https://stud-api.num.edu.mn/topMenus/TopSchedules?courseid=${url}`
-      );
-
-      response.data.map((item) => {
-        if (item.compName == "Лекц") {
-          lecture.push(item);
-        } else {
-          seminar.push(item);
-        }
-      });
-
-      let combinations = [];
-      lecture.map((item) => {
-        seminar.map((el) => {
-          if (item.groupid == el.groupid) {
-            combinations.push([item, el]);
-          }
-        });
-      });
-      // console.log(combinations);
-      items.push(combinations);
-    } catch (err) {
-      console.error(err);
+function getCombinations(arr) {
+  var result = [[]];
+  for (var i = 0; i < arr.length; i++) {
+    var currentSubArray = arr[i];
+    var temp = [];
+    for (var j = 0; j < currentSubArray.length; j++) {
+      for (var k = 0; k < result.length; k++) {
+        temp.push(result[k].concat(currentSubArray[j]));
+      }
     }
+    result = temp;
   }
-
-  return items;
+  return result;
 }
 
 calc.post("/", async (req, res) => {
   const currentDirectory = dirname(fileURLToPath(import.meta.url));
   const { body: bodyAll } = req;
   const { body } = bodyAll;
-  console.log(body, "body");
   // let iterator = 0;
   // let loop = body;
   let unclassifedlessons = [];
 
   const promisedData = await getDataFromSisi(body);
+
   Promise.all(promisedData).then(async (values) => {
+    // console.log(values);
     values.map((datas) => {
       let lecture = [];
       let seminar = [];
@@ -71,7 +56,28 @@ calc.post("/", async (req, res) => {
       });
 
       let combinations = [];
+
+      for (let each_lecture of lecture) {
+        if (each_lecture?.groupid == 0) {
+          if (each_lecture?.subjectCredit == 3) {
+            for (let each_seminar of seminar) {
+              if (each_seminar?.groupid == 0 && each_lecture?.courseid == each_seminar?.courseid) {
+                combinations.push([each_lecture, each_seminar]);
+              }
+            }
+          } else {
+            combinations.push([each_lecture]);
+          }
+        }
+      }
+      for (let each_seminar of seminar) {
+        if (each_seminar?.groupid == 0 && each_seminar?.subjectCredit < 3) {
+          combinations.push([each_seminar]);
+        }
+      }
+
       lecture.map((item) => {
+        if (item.groupid == 0) return;
         seminar.map((el) => {
           if (item.groupid == el.groupid) {
             combinations.push([item, el]);
@@ -80,143 +86,82 @@ calc.post("/", async (req, res) => {
       });
 
       unclassifedlessons.push(combinations);
-
-      // console.log(item.data);
-    });
-    console.log(unclassifedlessons);
-    var objectkeys = Object.keys(unclassifedlessons);
-
-    let keys = [];
-    function mdqu() {
-      let numb = 0;
-      objectkeys.map((item) => {
-        let k = {};
-        k[item] = unclassifedlessons[item].length;
-        numb++;
-        keys.push(k);
-      });
-    }
-
-    mdqu();
-    let numb = [];
-    keys.map((item) => {
-      let numbers = [];
-      let max = Object.values(item);
-      for (let i = 0; i < max; i++) {
-        numbers.push(i);
-      }
-      numb.push(numbers);
     });
 
-    let sssssss = combinations(numb);
+    console.log(unclassifedlessons.length, "unclassifedlessons");
+    let hugeAmount = false;
 
-    function combinations(arrays) {
-      function combine(index, current) {
-        if (index === arrays.length) {
-          result.push(current.slice());
-          return;
-        }
-        for (let i = 0; i < arrays[index].length; i++) {
-          current.push(arrays[index][i]);
-          combine(index + 1, current);
-          current.pop();
-        }
-      }
-      let result = [];
-      combine(0, []);
-      return result;
+    const possible_combinations = getCombinations(unclassifedlessons);
+    console.log(possible_combinations.length);
+    const valid_schedule = [];
+    if (possible_combinations.length > 10000) {
+      hugeAmount = true;
     }
 
-    let returndata = [];
-    let limit = 0;
-    let counterlesson1 = 0;
-
-    sssssss.map((item, indexxx) => {
-      let monday = [];
-      let tuesday = [];
-      let wednesday = [];
-      let thursday = [];
-      let friday = [];
-      let saturday = [];
-      let sunday = [];
-      item.map((el, ind) => {
-        unclassifedlessons[ind][el].map((i) => {
-          if (i.weekname == "Даваа") {
-            monday.push(i);
-          } else if (i.weekname == "Мягмар") {
-            tuesday.push(i);
-          } else if (i.weekname == "Лхагва") {
-            wednesday.push(i);
-          } else if (i.weekname == "Пүрэв") {
-            thursday.push(i);
-          } else if (i.weekname == "Баасан") {
-            friday.push(i);
-          } else if (i.weekname == "Бямба") {
-            saturday.push(i);
-          } else {
-            sunday.push(i);
+    for (let each_combination of possible_combinations) {
+      const weekly_schedule = {
+        1: [],
+        2: [],
+        3: [],
+        4: [],
+        5: [],
+      };
+      for (let each_class of each_combination) {
+        weekly_schedule?.[each_class?.weekday]?.push(each_class);
+      }
+      if (hugeAmount) {
+        let counter = 0;
+        for (let each_day in weekly_schedule) {
+          if (weekly_schedule[each_day].length > 0) {
+            counter += 1;
           }
-        });
-      });
-
-      let days = [
-        monday,
-        tuesday,
-        wednesday,
-        thursday,
-        friday,
-        saturday,
-        sunday,
-      ];
-      let daycounter = 0;
-
-      days.map((item) => {
-        let times = [];
-
-        item.map((el) => {
-          times.push(el.time.split("-"));
-        });
-        times.sort();
-
-        if (indexxx == 0) {
-          console.log(times);
         }
-        let countr = 0;
-        let timeslen = times.length;
-
-        if (timeslen == 1) {
-          countr++;
-        } else {
-          times.map((it, index1) => {
-            if (timeslen - 1 > index1) {
-              if (
-                it[0] != times[index1 + 1][0] &&
-                it[1] < times[index1 + 1][0]
-              ) {
-                countr++;
-              }
-            }
-          });
+        if (counter > 3) {
+          continue;
         }
-
-        if (timeslen == 0 || timeslen == 1) {
-          daycounter++;
-        } else if (timeslen - 1 == countr) {
-          daycounter++;
-        }
-
-        if (indexxx == 0) {
-        }
-      });
-
-      if (daycounter == days.length) {
-        returndata.push(days);
       }
+      for (let each_day in weekly_schedule) {
+        if (weekly_schedule[each_day].length > 0) {
+          const sorted = weekly_schedule[each_day].sort((a, b) => {
+            return a?.timeid - b?.timeid;
+          });
+          // this is very dangerous
+          weekly_schedule[each_day] = sorted;
+        }
+      }
+      let isValid = true;
+      for (let each_day in weekly_schedule) {
+        if (weekly_schedule[each_day].length > 0) {
+          if (!checkValidity(weekly_schedule[each_day])) {
+            isValid = false;
+            break;
+          }
+        }
+      }
+      if (isValid) {
+        valid_schedule.push(weekly_schedule);
+      }
+    }
+    let result = valid_schedule.map((item) => {
+      return Object.keys(item).map((key) => item[key]);
     });
-    console.log(returndata, "returndata");
-    let dataassss = JSON.stringify(returndata);
-    res.send(dataassss);
+
+    console.log(result.length, "result");
+    // if response is longer than 1000 then make it 1000
+    if (result.length > 1000) {
+      result = result.slice(0, 1000);
+    }
+    res.send(result);
   });
 });
+
+function checkValidity(arr) {
+  for (let i = 0; i < arr.length - 1; i++) {
+    if (arr[i].timeid + arr[i].durtime > arr[i + 1].timeid) {
+      return false;
+    }
+  }
+  return true;
+}
 
 export default calc;
