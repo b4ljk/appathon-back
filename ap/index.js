@@ -73,9 +73,19 @@ calc.post("/", async (req, res) => {
       for (let each_lecture of lecture) {
         if (each_lecture?.groupid == 0) {
           if (each_lecture?.subjectCredit == 3) {
+            let choosenAlready = false;
             for (let each_seminar of seminar) {
               if (each_seminar?.groupid == 0 && each_lecture?.courseid == each_seminar?.courseid) {
                 combinations.push([each_lecture, each_seminar]);
+                choosenAlready = true;
+              }
+            }
+            if (!choosenAlready) {
+              for (let each_leccc of lecture) {
+                if (each_leccc?.groupid == 0 && each_lecture?.courseid == each_leccc?.courseid) {
+                  combinations.push([each_lecture, each_leccc]);
+                  choosenAlready = true;
+                }
               }
             }
           } else {
@@ -103,7 +113,7 @@ calc.post("/", async (req, res) => {
 
     console.log(unclassifedlessons.length, "unclassifedlessons");
     let hugeAmount = false;
-
+    unclassifedlessons = unclassifedlessons.filter((el) => el.length != 0);
     const possible_combinations = getCombinations(unclassifedlessons);
     console.log(possible_combinations.length);
     const valid_schedule = [];
