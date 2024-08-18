@@ -58,6 +58,7 @@ calc.post("/", async (req, res) => {
   Promise.all(promisedData).then(async (values) => {
     // console.log(values);
     values.map((datas) => {
+      // console.log(datas);
       let lecture = [];
       let seminar = [];
       datas.data.map((item) => {
@@ -111,11 +112,9 @@ calc.post("/", async (req, res) => {
       unclassifedlessons.push(combinations);
     });
 
-    console.log(unclassifedlessons.length, "unclassifedlessons");
     let hugeAmount = false;
     unclassifedlessons = unclassifedlessons.filter((el) => el.length != 0);
     const possible_combinations = getCombinations(unclassifedlessons);
-    console.log(possible_combinations.length);
     const valid_schedule = [];
     if (possible_combinations.length > 10000) {
       hugeAmount = true;
@@ -130,7 +129,7 @@ calc.post("/", async (req, res) => {
         5: [],
       };
       for (let each_class of each_combination) {
-        weekly_schedule?.[each_class?.weekday]?.push(each_class);
+        weekly_schedule?.[each_class?.weekDay]?.push(each_class);
       }
       if (hugeAmount) {
         let counter = 0;
@@ -169,7 +168,6 @@ calc.post("/", async (req, res) => {
       return Object.keys(item).map((key) => item[key]);
     });
 
-    console.log(result.length, "result");
     // if response is longer than 1000 then make it 1000
     if (result.length > 1000) {
       result = result.slice(0, 1000);
